@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RamFest XP Tracker</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=boska@500,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
+      --color-bg: #0b0b0b; --color-surface:#121212; --color-surface-2:#1a1a1a; --color-border:#3a3a3a; --color-divider:#2a2a2a; --color-text:#f5f5f5; --color-text-muted:#d0d0d0; --color-primary:#b11226; --color-primary-hover:#8f0e1f; --color-primary-highlight:#3b1217; --color-success:#ffffff; --color-warning:#d9d9d9; --radius-sm:0.375rem; --radius-md:0.5rem; --radius-lg:0.75rem; --radius-xl:1rem; --shadow-sm:0 1px 2px rgba(0,0,0,0.06); --shadow-md:0 10px 24px rgba(0,0,0,0.08);
+      --font-body:'Satoshi', Inter, sans-serif; --font-display:'Boska', Georgia, serif;
+    }
+    [data-theme="dark"] {
+      --color-bg:#050505; --color-surface:#101010; --color-surface-2:#171717; --color-border:#373737; --color-divider:#242424; --color-text:#f7f7f7; --color-text-muted:#d7d7d7; --color-primary:#d11f36; --color-primary-hover:#a31529; --color-primary-highlight:#381217; --color-success:#ffffff; --color-warning:#dddddd; --shadow-sm:0 1px 2px rgba(0,0,0,0.35); --shadow-md:0 10px 24px rgba(0,0,0,0.34);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin:0; min-height:100vh; font-family:var(--font-body); font-size:var(--text-base); background:var(--color-bg); color:var(--color-text); line-height:1.5; }
+    button, input, select, textarea { font:inherit; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: var(--space-4); }
+    .skip { position:absolute; left:-9999px; }
+    .skip:focus { left: var(--space-4); top: var(--space-4); background:var(--color-surface); padding:var(--space-3); z-index:1000; border-radius:var(--radius-md); }
+    header { padding: var(--space-6) 0 var(--space-4); display:flex; justify-content:space-between; gap:var(--space-4); align-items:flex-start; }
+    .brand { display:flex; gap:var(--space-3); align-items:center; }
+    .logo { width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg, var(--color-primary), var(--color-success)); display:grid; place-items:center; color:white; box-shadow:var(--shadow-sm); }
+    .logo svg { width:24px; height:24px; }
+    h1 { margin:0; font-family:var(--font-display); font-size:var(--text-2xl); line-height:1; }
+    .sub { color:var(--color-text-muted); max-width:62ch; margin-top:var(--space-2); }
+    .top-actions { display:flex; gap:var(--space-2); flex-wrap:wrap; }
+    .btn { min-height:44px; border:1px solid rgba(0,0,0,0.08); background:var(--color-surface); color:var(--color-text); border-radius:var(--radius-lg); padding:0 var(--space-4); box-shadow:var(--shadow-sm); cursor:pointer; }
+    .btn.primary { background:var(--color-primary); color:white; border-color:transparent; }
+    .btn.primary:hover { background:var(--color-primary-hover); }
+    .grid { display:grid; grid-template-columns: 1.1fr 0.9fr; gap:var(--space-4); }
+    .panel { background:var(--color-surface); border:1px solid rgba(0,0,0,0.08); border-color:var(--color-border); border-radius:var(--radius-xl); padding:var(--space-4); box-shadow:var(--shadow-sm); }
+    .panel h2 { margin:0 0 var(--space-3); font-size:var(--text-lg); }
+    .stats { display:grid; grid-template-columns: repeat(4, 1fr); gap:var(--space-3); margin-bottom:var(--space-4); }
+    .stat { background:var(--color-surface-2); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:var(--space-4); }
+    .stat .label { font-size:var(--text-xs); color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.06em; }
+    .stat .value { font-size:var(--text-xl); font-weight:700; margin-top:var(--space-2); }
+    form { display:grid; gap:var(--space-3); }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-3); }
+    label { font-size:var(--text-sm); font-weight:600; display:grid; gap:var(--space-2); }
+    input, select, textarea { width:100%; min-height:44px; border:1px solid var(--color-border); background:var(--color-surface-2); color:var(--color-text); border-radius:var(--radius-md); padding:0.8rem 0.9rem; }
+    textarea { min-height:88px; resize:vertical; }
+    .hint { font-size:var(--text-xs); color:var(--color-text-muted); }
+    table { width:100%; border-collapse: collapse; font-size:var(--text-sm); }
+    th, td { text-align:left; padding:0.85rem 0.7rem; border-bottom:1px solid var(--color-divider); vertical-align:top; }
+    th { font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.06em; color:var(--color-text-muted); }
+    .pill { display:inline-flex; align-items:center; min-height:30px; padding:0 0.7rem; border-radius:999px; background:var(--color-primary-highlight); color:var(--color-primary); font-weight:700; }
+    .leaderboard { display:grid; gap:var(--space-3); }
+    .player { display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3); border:1px solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-surface-2); }
+    .player .name { font-weight:700; }
+    .bar { width:100%; height:10px; border-radius:999px; background:rgba(0,0,0,0.08); margin-top:var(--space-2); overflow:hidden; }
+    .bar > span { display:block; height:100%; background:linear-gradient(90deg, var(--color-primary), var(--color-success)); }
+    .actions { display:flex; gap:var(--space-2); flex-wrap:wrap; }
+    .small { font-size:var(--text-xs); color:var(--color-text-muted); }
+    .empty { color:var(--color-text-muted); padding:var(--space-6) 0; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2,1fr); } header { flex-direction:column; } }
+    @media (max-width: 640px) { .row { grid-template-columns:1fr; } .stats { grid-template-columns: 1fr 1fr; } th:nth-child(3), td:nth-child(3), th:nth-child(6), td:nth-child(6) { display:none; } }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip">Skip to content</a>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="XP Challenge Tracker logo">
+              <path d="M12 3l2.7 5.47 6.03.88-4.36 4.25 1.03 6.01L12 16.77 6.6 19.61l1.03-6.01L3.27 9.35l6.03-.88L12 3z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1>RamFest XP Tracker</h1>
+            <p class="sub">A lightweight app for parties, dares, and multi-week events. Add players, log completed challenges, award XP, and watch the leaderboard update instantly.</p>
+          </div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn" data-theme-toggle aria-label="Switch theme">🌙</button>
+        <button class="btn" id="seedDemo">Load demo</button>
+        <button class="btn" id="exportBtn">Export JSON</button>
+        <button class="btn" id="clearBtn">Clear all</button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="stats" aria-label="Summary stats">
+        <div class="stat"><div class="label">Total XP</div><div class="value" id="totalXp">0</div></div>
+        <div class="stat"><div class="label">Entries</div><div class="value" id="entryCount">0</div></div>
+        <div class="stat"><div class="label">Players</div><div class="value" id="playerCount">0</div></div>
+        <div class="stat"><div class="label">Top Level</div><div class="value" id="topLevel">Lvl 1</div></div>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2>Log a challenge</h2>
+          <form id="entryForm">
+            <div class="row">
+              <label>Player name
+                <input id="player" name="player" placeholder="Alex" required />
+              </label>
+              <label>Date
+                <input id="date" name="date" type="date" required />
+              </label>
+            </div>
+            <div class="row">
+              <label>Event or place
+                <input id="event" name="event" placeholder="Birthday party" />
+              </label>
+              <label>XP earned
+                <select id="xp" name="xp">
+                  <option value="1">+1 XP</option>
+                  <option value="2">+2 XP</option>
+                  <option value="3">+3 XP</option>
+                  <option value="5">+5 XP</option>
+                  <option value="10">+10 XP</option>
+                </select>
+              </label>
+            </div>
+            <label>Challenge completed
+              <input id="challenge" name="challenge" placeholder="Introduced ourselves to 3 new people" required />
+            </label>
+            <div class="row">
+              <label>Photo upload
+                <input id="photo" name="photo" type="file" accept="image/*" aria-describedby="photoHelp photoStatus" />
+              </label>
+              <div>
+                <div class="hint" id="photoHelp" style="margin-top:2rem;">Upload a photo from your phone or computer. Image previews stay in this browser session.</div>
+                <div class="hint" id="photoStatus" aria-live="polite">No photo selected.</div>
+              </div>
+            </div>
+            <label>Notes
+              <textarea id="notes" name="notes" placeholder="Optional details"></textarea>
+            </label>
+            <div class="actions">
+              <button class="btn primary" type="submit">Add XP entry</button>
+              <button class="btn" type="button" id="randomXp">Randomize XP</button>
+            </div>
+            <div class="hint">Tip: each completed dare or challenge gets its own row, which keeps scoring fair and the leaderboard easy to read.</div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>Leaderboard</h2>
+          <div id="leaderboard" class="leaderboard"></div>
+          <p class="small">Levels: 0-9 = Lvl 1, 10-24 = Lvl 2, 25-49 = Lvl 3, 50-79 = Lvl 4, 80+ = Lvl 5.</p>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: var(--space-4);">
+        <h2>Recent entries</h2>
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Player</th>
+                <th>Event</th>
+                <th>Challenge</th>
+                <th>XP</th>
+                <th>Photo</th><th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="entriesBody"></tbody>
+          </table>
+          <div id="emptyState" class="empty">No entries yet. Add your first completed challenge above.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+      entries: []
+    };
+    document.documentElement.setAttribute('data-theme', state.theme);
+    document.querySelector('[data-theme-toggle]').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+    document.querySelector('[data-theme-toggle]').addEventListener('click', () => {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', state.theme);
+      document.querySelector('[data-theme-toggle]').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+    });
+
+    const form = document.getElementById('entryForm');
+    const entriesBody = document.getElementById('entriesBody');
+    const emptyState = document.getElementById('emptyState');
+    const dateInput = document.getElementById('date');
+    const photoInput = document.getElementById('photo');
+    const photoStatus = document.getElementById('photoStatus');
+    if (photoInput) {
+      photoInput.addEventListener('change', () => {
+        const file = photoInput.files && photoInput.files[0];
+        photoStatus.textContent = file ? `Selected: ${file.name}` : 'No photo selected.';
+      });
+    }
+    dateInput.value = new Date().toISOString().slice(0,10);
+
+    function levelForXp(xp){
+      if (xp >= 80) return 5;
+      if (xp >= 50) return 4;
+      if (xp >= 25) return 3;
+      if (xp >= 10) return 2;
+      return 1;
+    }
+
+    function leaderboardData(){
+      const map = new Map();
+      state.entries.forEach(e => {
+        const current = map.get(e.player) || { player: e.player, xp: 0, entries: 0 };
+        current.xp += e.xp;
+        current.entries += 1;
+        map.set(e.player, current);
+      });
+      return [...map.values()].sort((a,b) => b.xp - a.xp || a.player.localeCompare(b.player));
+    }
+
+    function render(){
+      const totalXp = state.entries.reduce((sum, e) => sum + e.xp, 0);
+      const players = leaderboardData();
+      document.getElementById('totalXp').textContent = totalXp;
+      document.getElementById('entryCount').textContent = state.entries.length;
+      document.getElementById('playerCount').textContent = players.length;
+      document.getElementById('topLevel').textContent = 'Lvl ' + (players[0] ? levelForXp(players[0].xp) : 1);
+
+      entriesBody.innerHTML = '';
+      emptyState.style.display = state.entries.length ? 'none' : 'block';
+      [...state.entries].sort((a,b) => (a.date < b.date ? 1 : -1)).forEach((e, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${e.date}</td>
+          <td><strong>${escapeHtml(e.player)}</strong></td>
+          <td>${escapeHtml(e.event || '—')}</td>
+          <td>${escapeHtml(e.challenge)}</td>
+          <td><span class="pill">+${e.xp} XP</span></td>
+          <td>${e.photoUrl ? `<a href="${e.photoUrl}" target="_blank" rel="noopener noreferrer">View photo</a>` : '—'}</td>
+          <td>${escapeHtml(e.notes || '—')}</td>
+        `;
+        entriesBody.appendChild(tr);
+      });
+
+      const lb = document.getElementById('leaderboard');
+      lb.innerHTML = '';
+      if (!players.length) {
+        lb.innerHTML = '<p class="empty">No players yet. Add an entry to start the leaderboard.</p>';
+      } else {
+        const max = Math.max(...players.map(p => p.xp), 1);
+        players.forEach((p, i) => {
+          const card = document.createElement('div');
+          card.className = 'player';
+          card.innerHTML = `
+            <div style="flex:1;">
+              <div class="name">${i + 1}. ${escapeHtml(p.player)}</div>
+              <div class="small">${p.entries} completed challenge${p.entries === 1 ? '' : 's'} · Level ${levelForXp(p.xp)}</div>
+              <div class="bar" aria-hidden="true"><span style="width:${(p.xp / max) * 100}%;"></span></div>
+            </div>
+            <div style="text-align:right; min-width:88px;">
+              <div style="font-weight:800; font-size:var(--text-lg)">${p.xp}</div>
+              <div class="small">XP</div>
+            </div>`;
+          lb.appendChild(card);
+        });
+      }
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const file = photoInput && photoInput.files && photoInput.files[0] ? photoInput.files[0] : null;
+      const entry = {
+        player: form.player.value.trim(),
+        date: form.date.value,
+        event: form.event.value.trim(),
+        challenge: form.challenge.value.trim(),
+        xp: Number(form.xp.value),
+        notes: form.notes.value.trim(),
+        photoName: file ? file.name : '',
+        photoUrl: file ? URL.createObjectURL(file) : ''
+      };
+      if (!entry.player || !entry.challenge || !entry.date) return;
+      state.entries.push(entry);
+      form.reset();
+      dateInput.value = new Date().toISOString().slice(0,10);
+      form.xp.value = '1';
+      if (photoStatus) photoStatus.textContent = 'No photo selected.';
+      render();
+    });
+
+    document.getElementById('randomXp').addEventListener('click', () => {
+      const options = ['1','2','3','5','10'];
+      form.xp.value = options[Math.floor(Math.random() * options.length)];
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (!state.entries.length) return;
+      if (confirm('Clear all XP entries?')) {
+        state.entries = [];
+        render();
+      }
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state.entries, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'xp-challenge-tracker-data.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    document.getElementById('seedDemo').addEventListener('click', () => {
+      state.entries = [
+        { player:'You', date:'2026-04-10', event:'House party', challenge:'Introduced yourself to 3 new people', xp:1, notes:'Easy warm-up' },
+        { player:'Your friend', date:'2026-04-10', event:'House party', challenge:'Got a 5-person group photo', xp:2, notes:'' },
+        { player:'You', date:'2026-04-11', event:'Downtown bar', challenge:'Did karaoke', xp:3, notes:'Crowd sang along' },
+        { player:'Your friend', date:'2026-04-12', event:'Theme night', challenge:'Completed a bold dare', xp:5, notes:'Worth it' }
+      ];
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
