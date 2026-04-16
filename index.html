@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="./supabase.min.js"></script>
+  <script src="supabase.min.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RamFest XP Tracker</title>
@@ -229,7 +229,38 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       return [...map.values()].sort((a,b) => b.xp - a.xp || a.player.localeCompare(b.player));
     }
 async function loadEntriesFromSupabase() {
-  function subscribeToRealtimeEntries() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('entries')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading entries from Supabase', error);
+      render(); // still draw empty state
+      return;
+    }
+
+    // Map rows into your state format
+    state.entries = (data || []).map((row) => ({
+      player: row.player,
+      date: row.created_at ? row.created_at.slice(0, 10) : '',
+      event: row.event || '',
+      challenge: row.challenge || '',
+      xp: row.xp || 0,
+      notes: row.notes || '',
+      photoUrl: row.photourl || '',
+      photoName: row.photourl || ''
+    }));
+
+    render();
+  } catch (err) {
+    console.error('Unexpected error loading entries', err);
+    render();
+  }
+}
+
+function subscribeToRealtimeEntries() {
   supabaseClient
     .channel('public:entries')
     .on(
@@ -244,16 +275,17 @@ async function loadEntriesFromSupabase() {
           challenge: row.challenge || '',
           xp: row.xp || 0,
           notes: row.notes || '',
-          photoUrl: row.photo_url || '',
-          photoName: row.photo_url || ''
+          photoUrl: row.photourl || '',
+          photoName: row.photourl || ''
         };
-        // Add newest at the top
         state.entries.unshift(entry);
         render();
       }
     )
     .subscribe();
 }
+
+loadEntriesFromSupabase().then(subscribeToRealtimeEntries);
   try {
     const { data, error } = await supabaseClient
       .from('entries')
