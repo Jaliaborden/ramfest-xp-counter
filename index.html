@@ -229,6 +229,31 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       return [...map.values()].sort((a,b) => b.xp - a.xp || a.player.localeCompare(b.player));
     }
 async function loadEntriesFromSupabase() {
+  function subscribeToRealtimeEntries() {
+  supabaseClient
+    .channel('public:entries')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'entries' },
+      (payload) => {
+        const row = payload.new;
+        const entry = {
+          player: row.player,
+          date: row.created_at ? row.created_at.slice(0, 10) : '',
+          event: row.event || '',
+          challenge: row.challenge || '',
+          xp: row.xp || 0,
+          notes: row.notes || '',
+          photoUrl: row.photo_url || '',
+          photoName: row.photo_url || ''
+        };
+        // Add newest at the top
+        state.entries.unshift(entry);
+        render();
+      }
+    )
+    .subscribe();
+}
   try {
     const { data, error } = await supabaseClient
       .from('entries')
@@ -330,9 +355,8 @@ async function loadEntriesFromSupabase() {
 
   if (!entry.player || !entry.challenge || !entry.date) return;
 
-  // Optimistic update: show in UI immediately
-  state.entries.unshift(entry);
-  render();
+  // Do NOT push into state.entries here when Realtime is enabled.
+// Let the Realtime subscription add it after the insert succeeds.
 
   try {
     const { data, error } = await supabaseClient
@@ -398,7 +422,9 @@ async function loadEntriesFromSupabase() {
       render();
     });
 
-    loadEntriesFromSupabase();;
+    loadEntriesFromSupabase().then(() => {
+  subscribeToRealtimeEntries();
+});
   </script>
 </body>
 </html>
