@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RamFest XP Tracker</title>
@@ -178,6 +179,11 @@
   </div>
 
   <script>
+    // Replace these with your real values
+const SUPABASE_URL = 'https://xinygynemgavvgotdyjx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_N2uBkUIdt1Y1QY19aOLmXw_6z-eqX7q';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const state = {
       theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
       entries: []
@@ -222,7 +228,62 @@
       });
       return [...map.values()].sort((a,b) => b.xp - a.xp || a.player.localeCompare(b.player));
     }
+async function loadEntriesFromSupabase() {
+  function subscribeToRealtimeEntries() {
+  supabaseClient
+    .channel('public:entries')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'entries' },
+      (payload) => {
+        const row = payload.new;
+        const entry = {
+          player: row.player,
+          date: row.created_at ? row.created_at.slice(0, 10) : '',
+          event: row.event || '',
+          challenge: row.challenge || '',
+          xp: row.xp || 0,
+          notes: row.notes || '',
+          photoUrl: row.photo_url || '',
+          photoName: row.photo_url || ''
+        };
+        // Add newest at the top
+        state.entries.unshift(entry);
+        render();
+      }
+    )
+    .subscribe();
+}
+  try {
+    const { data, error } = await supabaseClient
+      .from('entries')
+      .select('*')
+      .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('Error loading entries', error);
+      render(); // still draw empty state
+      return;
+    }
+
+    state.entries = data.map(row => ({
+      player: row.player,
+      // use created_at as the date
+      date: row.created_at ? row.created_at.slice(0, 10) : '',
+      event: row.event || '',
+      challenge: row.challenge || '',
+      xp: row.xp || 0,
+      notes: row.notes || '',
+      photoUrl: row.photo_url || '',
+      photoName: row.photo_url || ''
+    }));
+
+    render();
+  } catch (err) {
+    console.error('Unexpected error loading entries', err);
+    render();
+  }
+}
     function render(){
       const totalXp = state.entries.reduce((sum, e) => sum + e.xp, 0);
       const players = leaderboardData();
@@ -275,27 +336,59 @@
       return String(str).replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
     }
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const file = photoInput && photoInput.files && photoInput.files[0] ? photoInput.files[0] : null;
-      const entry = {
-        player: form.player.value.trim(),
-        date: form.date.value,
-        event: form.event.value.trim(),
-        challenge: form.challenge.value.trim(),
-        xp: Number(form.xp.value),
-        notes: form.notes.value.trim(),
-        photoName: file ? file.name : '',
-        photoUrl: file ? URL.createObjectURL(file) : ''
-      };
-      if (!entry.player || !entry.challenge || !entry.date) return;
-      state.entries.push(entry);
-      form.reset();
-      dateInput.value = new Date().toISOString().slice(0,10);
-      form.xp.value = '1';
-      if (photoStatus) photoStatus.textContent = 'No photo selected.';
-      render();
-    });
+    form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const file = photoInput && photoInput.files && photoInput.files[0] ? photoInput.files[0] : null;
+
+  const entry = {
+    player: form.player.value.trim(),
+    date: form.date.value, // temporary; will be replaced by created_at
+    event: form.event.value.trim(),
+    challenge: form.challenge.value.trim(),
+    xp: Number(form.xp.value),
+    notes: form.notes.value.trim(),
+    photoName: file ? file.name : '',
+    // for now we don't upload the file to Supabase Storage, so we leave this blank
+    photoUrl: ''
+  };
+
+  if (!entry.player || !entry.challenge || !entry.date) return;
+
+  // Do NOT push into state.entries here when Realtime is enabled.
+// Let the Realtime subscription add it after the insert succeeds.
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('entries')
+      .insert({
+        player: entry.player,
+        event: entry.event,
+        challenge: entry.challenge,
+        xp: entry.xp,
+        notes: entry.notes,
+        photo_url: entry.photoUrl
+      })
+      .select()
+      .single(); // return the inserted row [web:157][web:164]
+
+    if (error) {
+      console.error('Error saving entry to Supabase', error);
+      // optional: show a message or revert the optimistic entry
+    } else if (data) {
+      // Use real created_at as the date
+      entry.date = data.created_at ? data.created_at.slice(0, 10) : entry.date;
+    }
+  } catch (err) {
+    console.error('Unexpected error saving entry', err);
+  }
+
+  form.reset();
+  dateInput.value = new Date().toISOString().slice(0, 10);
+  form.xp.value = '1';
+  if (photoStatus) photoStatus.textContent = 'No photo selected.';
+  render();
+});
 
     document.getElementById('randomXp').addEventListener('click', () => {
       const options = ['1','2','3','5','10'];
@@ -329,7 +422,9 @@
       render();
     });
 
-    render();
+    loadEntriesFromSupabase().then(() => {
+  subscribeToRealtimeEntries();
+});
   </script>
 </body>
 </html>
