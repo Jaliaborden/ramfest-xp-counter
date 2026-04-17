@@ -248,8 +248,8 @@ async function loadEntriesFromSupabase() {
       challenge: row.challenge || '',
       xp: row.xp || 0,
       notes: row.notes || '',
-      photoUrl: row.photourl || '',
-      photoName: row.photourl || ''
+      photoUrl: row.photo_url || '',
+      photoName: row.photo_url || ''
     }));
 
     render();
@@ -274,8 +274,8 @@ function subscribeToRealtimeEntries() {
           challenge: row.challenge || '',
           xp: row.xp || 0,
           notes: row.notes || '',
-          photoUrl: row.photourl || '',
-          photoName: row.photourl || ''
+          photoUrl: row.photo_url || '',
+          photoName: row.photo_url || ''
         };
         state.entries.unshift(entry);
         render();
@@ -375,7 +375,7 @@ form.addEventListener('submit', async (e) => {
         challenge: entry.challenge,
         xp: entry.xp,
         notes: entry.notes,
-        photourl: entry.photoUrl
+        photo_url: entry.photoUrl
       })
       .select()
       .single();
